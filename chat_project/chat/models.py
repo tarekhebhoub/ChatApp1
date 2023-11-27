@@ -10,7 +10,7 @@ class User(AbstractUser):
 
 
 class Room(models.Model):
-	name_room=models.CharField(max_length=255,unique=True)
+	name_room=models.CharField(max_length=255)
 	isGroupeChat=models.BooleanField(default=False)
 	owner=models.ForeignKey(get_user_model(),on_delete=models.CASCADE,null=True)
 	users=models.ManyToManyField(get_user_model(),related_name='users_in_rooms')
@@ -29,4 +29,4 @@ class Message(models.Model):
 	room=models.ForeignKey(Room,on_delete=models.CASCADE,related_name='the_room')
 	readBy=models.ForeignKey(User,on_delete=models.CASCADE,related_name='the_readers',null=True)
 	def __str__(self):
-		return self.message
+		return self.content

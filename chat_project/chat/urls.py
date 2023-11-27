@@ -11,7 +11,8 @@ urlpatterns = [
     path('tryToken/',views.tryToken),
     path('logout/',views.LogoutView.as_view()),
     path('searchUser/',views.searchUsers),
-    path('message/<int:id_room>/',views.MessageView.as_view())
+    path('message/<int:id_room>/',views.MessageView.as_view()),
+    path('groups/',views.createGroupe)
 
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

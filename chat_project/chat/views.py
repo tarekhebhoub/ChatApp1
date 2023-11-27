@@ -9,12 +9,11 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from django.db.models import Q
 from django.contrib.auth import authenticate
-
+import ast
 from . import models
 # Create your views here.
 
 def hello(request):
-	print("tarek")
 	return Response({"tarek"})
 
 class UserCreate(APIView):
@@ -97,7 +96,7 @@ class RoomView(APIView):
         serializer=serializers.RoomSerializer(room)
         return Response(serializer.data)
 
-        # request.data['owner']=user.id
+        # request.data['ouserswner']=user.id
         # request.data['users']=[user.id]
         # serializer = serializers.RoomSerializer(data=request.data)
         # if serializer.is_valid():
@@ -107,13 +106,28 @@ class RoomView(APIView):
     def get(self,request):
         user=request.user
         print(user)
-        rooms=models.Room.objects.filter(users=user.id)
+
+# Get rooms where the user is a member
+        rooms = models.Room.objects.filter(Q(users__in=[user])|Q(owner=user))
+        print(rooms)
+        # rooms=models.Room.objects.filter(users=user.id)
         serializer=serializers.RoomSerializer(rooms,many=True)
         data=serializer.data
         i=0
         for room in rooms:
             full_users_list = list(get_user_model().objects.filter(id__in=room.users.all()))
             userSerializer=serializers.UserSerializer(full_users_list,many=True)
+
+            room_messages = models.Message.objects.filter(room=room.id).order_by('-timestamp')
+            if room_messages.exists():
+                last_message_in_room = room_messages.first()
+                messageSerializer=serializers.MessageSerializer(last_message_in_room)
+                data[i]['latestMessage']=messageSerializer.data
+                # Now, last_message_in_room contains the last message in the specified room
+            else:
+                # Handle the case when there are no messages in the specified room
+                data[i]['latestMessage']=None
+
             data[i]['users']=userSerializer.data
             i+=1
         return Response(data)
@@ -121,18 +135,43 @@ class RoomView(APIView):
 class MessageView(APIView):
     def post(self,request,id_room):
         data=request.data
+        rooms=models.Room.objects.get(id=id_room)
         data['sender']=request.user.id
         data['room']=id_room
         serializer=serializers.MessageSerializer(data=data)
         if serializer.is_valid():
+
             serializer.save()
-            return Response(serializer.data)
+            data=serializer.data
+            data['sender']=request.user.id
+            user=serializers.UserSerializer(request.user)
+            data['sender']=user.data
+            room=serializers.RoomSerializer(rooms)
+            data['room']=room.data
+            print(data)
+
+            if data['readBy']:
+                readBy=serializers.UserSerializer(data['readBy'])
+                data['readBy']=readBy.data
+            print(data)
+            return Response(data)
         return Response(serializer.errors)
     def get(self,request,id_room):
         # room=models.objects.get(id=id_room)
         messages=models.Message.objects.filter(room=id_room)
         serializer=serializers.MessageSerializer(messages,many=True)
-        return Response(serializer.data)
+        data=serializer.data
+        i=0
+        for message in messages:
+            user=serializers.UserSerializer(message.sender)
+            data[i]['sender']=user.data
+            room=serializers.RoomSerializer(message.room)
+            data[i]['room']=room.data
+            if message.readBy:
+                readBy=serializers.UserSerializer(message.readBy)
+                data[i]['readBy']=readBy.data
+            i+=1
+        return Response(data)
 
 
 
@@ -154,3 +193,26 @@ def searchUsers(request):
     return Response(serializer.data)
     return Response('')
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def createGroupe(request):
+    print(request.data)
+
+
+
+    data1=request.data
+    roomData={}
+    roomData["owner"]=request.user
+    roomData["name_room"]=data1["name"]
+    users=data1['users'] 
+    roomData['isGroupeChat']=True
+    users = ast.literal_eval(users)
+
+    room=models.Room.objects.create(**roomData)
+    room.users.set(users)
+    serializer=serializers.RoomSerializer(room)
+    data=serializer.data
+    full_users_list = list(get_user_model().objects.filter(id__in=users))
+    userSerializer=serializers.UserSerializer(full_users_list,many=True)
+    data['users']=userSerializer.data
+    return Response(data)

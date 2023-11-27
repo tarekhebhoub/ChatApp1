@@ -48,7 +48,7 @@ const MyChats = ({ fetchAgain }) => {
     // eslint-disable-next-line
   }, [fetchAgain]);
 
-
+  console.log(chats)
 
   return (
     <Box
@@ -108,16 +108,16 @@ const MyChats = ({ fetchAgain }) => {
               >
                 <Text>
 
-                  {!chat.isGroupChat
+                  {!chat.isGroupeChat
                     ? getSender(loggedUser, chat.users)
                     : chat.name_room}
                 </Text>
                 {chat.latestMessage && (
                   <Text fontSize="xs">
-                    <b>{chat.latestMessage.sender.first_name} : </b>
-                    {chat.latestMessage.content.length > 50
-                      ? chat.latestMessage.content.substring(0, 51) + "..."
-                      : chat.latestMessage.content}
+                    <b>{chat.latestMessage?.sender.first_name}  </b>
+                    {chat.latestMessage?.content.length > 50
+                      ? chat.latestMessage?.content.substring(0, 51) + "..."
+                      : chat.latestMessage?.content}
                   </Text>
                 )}
               </Box>

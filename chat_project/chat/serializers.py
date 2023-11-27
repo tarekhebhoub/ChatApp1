@@ -33,5 +33,5 @@ class RoomSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
        class Meta:
            model = models.Message
-           fields = ('room', 'sender', 'content', 'timestamp')
-           read_only_fields = ('timestamp',)
+           fields = ('room', 'sender', 'content', 'timestamp','readBy')
+           read_only_fields = ('timestamp','readBy',)

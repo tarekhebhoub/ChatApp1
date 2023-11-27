@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 ASGI_APPLICATION = 'chat_project.asgi.application'
 CORS_ALLOW_ALL_ORIGINS=True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3001",
+    "http://localhost:3000",
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -161,3 +161,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+WEBSOCKETS_SSL_CERTIFICATE = '/home/tarek/Documents/myprojet/ProjetSe/ProjetSe/cert.pem'
+WEBSOCKETS_SSL_KEY = '/home/tarek/Documents/myprojet/ProjetSe/ProjetSe/key.pem'

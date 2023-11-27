@@ -29,6 +29,7 @@ const GroupChatModal = ({ children }) => {
   const toast = useToast();
 
   const { user, chats, setChats } = ChatState();
+  const url = process.env.REACT_APP_API_URL;
 
   const handleGroup = (userToAdd) => {
     if (selectedUsers.includes(userToAdd)) {
@@ -51,18 +52,22 @@ const GroupChatModal = ({ children }) => {
       return;
     }
 
-    try {
+    
       setLoading(true);
       const config = {
         headers: {
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Token ${user.token}`,
         },
       };
-      const { data } = await axios.get(`/api/user?search=${search}`, config);
-      console.log(data);
-      setLoading(false);
-      setSearchResult(data);
-    } catch (error) {
+      await axios.get(url+`searchUser/?search=${search}`, config)
+      .then((res)=>{
+        console.log(res.data);
+        setLoading(false);
+        setSearchResult(res.data);
+      })
+      
+     
+     .catch ((error)=> {
       toast({
         title: "Error Occured!",
         description: "Failed to Load the Search Results",
@@ -71,7 +76,7 @@ const GroupChatModal = ({ children }) => {
         isClosable: true,
         position: "bottom-left",
       });
-    }
+    })
   };
 
   const handleDelete = (delUser) => {
@@ -90,39 +95,43 @@ const GroupChatModal = ({ children }) => {
       return;
     }
 
-    try {
+    
       const config = {
         headers: {
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Token ${user.token}`,
         },
       };
-      const { data } = await axios.post(
-        `/api/chat/group`,
+      await axios.post(
+        url+`groups/`,
         {
           name: groupChatName,
-          users: JSON.stringify(selectedUsers.map((u) => u._id)),
+          users: JSON.stringify(selectedUsers.map((u) => u.id)),
         },
         config
-      );
-      setChats([data, ...chats]);
-      onClose();
-      toast({
-        title: "New Group Chat Created!",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-        position: "bottom",
-      });
-    } catch (error) {
+      )
+      .then((res)=>{
+        console.log(res.data)
+        setChats([res.data, ...chats]);
+        onClose();
+        toast({
+          title: "New Group Chat Created!",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+          position: "bottom",
+        });
+      })
+      
+      .catch ((error) =>{
       toast({
         title: "Failed to Create the Chat!",
-        description: error.response.data,
+        description: error.data,
         status: "error",
         duration: 5000,
         isClosable: true,
         position: "bottom",
       });
-    }
+    })
   };
 
   return (

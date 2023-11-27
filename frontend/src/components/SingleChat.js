@@ -31,7 +31,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const wsurlenv=process.env.REACT_APP_WS_URL;
   const {room_id}=useParams()
 
-  const wsurl=`ws://${wsurlenv}/ws/`
+  const wsurl=`wss://${wsurlenv}/ws/`
 
 
   const [socket, setSocket] = useState(null);
@@ -52,7 +52,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const { selectedChat, setSelectedChat, user, notification, setNotification } =
     ChatState();
 
-  const fetchMessages = async () => {
+  const fetchMessages =  () => {
     if (!selectedChat) return;
 
     
@@ -70,7 +70,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         setLoading(false);
 
         // socket.emit("join chat", selectedChat.id);
-        chatSocket.send(["join chat",selectedChat.id]);
+        // chatSocket.send(["join chat",selectedChat.id]);
 
       })
       .catch ((error)=> {
@@ -85,9 +85,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     })
   };
 
-  const sendMessage = async (event) => {
+  const sendMessage =  (event) => {
     if (event.key === "Enter" && newMessage) {
-        typingSocket.send([false,user.username]);
+        // chatSocket.send(["typing",false,user?.username]);
 
       // socket.emit("stop typing", selectedChat._id);
         const config = {
@@ -97,7 +97,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           },
         };
         setNewMessage("");
-        await axios.post(url+"message/"+selectedChat.id+"/",
+         axios.post(url+"message/"+selectedChat.id+"/",
           {
             content: newMessage,
             // chatId: selectedChat,
@@ -105,8 +105,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           config
         )
         .then((res)=>{
-          setMessages([...messages, res.data]);
-          chatSocket.send(res.data)
+          // setMessages([...messages, res.data]);
+          console.log(res.data)
+          let data=res.data
+          data = JSON.stringify(data);
+
+          chatSocket.send(["chat",data])
         })
         // socket.emit("new message", data);
         .catch ((error)=> {
@@ -125,28 +129,58 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   useEffect(() => {
 
     
-    const typingSocket = new WebSocket(wsurl+'typing/'+selectedChat?.id+'/');
+    const chatSocket = new WebSocket(wsurl+'chat/'+selectedChat?.id+'/');
     
 
-    setTypingSocket(typingSocket)
-    typingSocket.addEventListener('open', (event) => {
+    setChatSocket(chatSocket)
+    chatSocket?.addEventListener('open', (event) => {
       console.log('WebSocket connection opened:', event);
       setSocketConnected(true)
     });
 
-    // typingSocket.addEventListener('typing', (event) => {
+    // chatSocket.addEventListener('typing', (event) => {
     //   // setIsTyping(true)
     // });
-    typingSocket.addEventListener('message', (event) => {
-      const data=JSON.parse(event.data)
-      console.log(data)
-      if(data.username!==user.username){
-        setIsTyping(data.is_typing)
-      }
-    });
 
+    chatSocket?.addEventListener('message', (event) => {
+      let data=event.data
+      data = JSON.parse(data);
+      console.log(data)
+      if(data.type==="typing"){
+        if(data.username!==user?.username){
+          if(data.is_typing=="true"){
+
+            console.log(data.is_typing)
+
+            setIsTyping(true)
+          }
+          if(data.is_typing=="false"){
+            setIsTyping(false)
+          }
+        }
+      }
+
+      if (data.type==="chat"){
+        console.log(data.content)
+        const msg = JSON.parse(data.content);
+        console.log(msg)
+        if (
+        !selectedChatCompare || // if chat is not selected or doesn't match current chat
+        selectedChatCompare.id !== msg.room.id
+      ) {
+        if (!notification.includes(msg)) {
+          setNotification((prevMessages) => [...prevMessages, msg]);
+          setFetchAgain(!fetchAgain);
+        }
+      } else {
+
+        setMessages((prevMessages) => [...prevMessages, msg]);
+      }
+      }
+      
+    });
   
-    typingSocket.addEventListener('close', (event) => {
+    chatSocket?.addEventListener('close', (event) => {
       console.log('WebSocket connection closed:', event);
     });
 
@@ -167,11 +201,11 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   }, [selectedChat]);
 
   useEffect(() => {
-    const chatSocket=new WebSocket(wsurl+'chat/'+selectedChat?.id+'/')
-    console.log(chatSocket)
-    chatSocket.addEventListener('open', (event) => {
-      console.log('WebSocket connection opened:', event);
-    });
+    // const chatSocket=new WebSocket(wsurl+'chat/'+selectedChat?.id+'/')
+    // console.log(chatSocket)
+    // chatSocket?.addEventListener('open', (event) => {
+    //   console.log('WebSocket connection opened:', event);
+    // });
     fetchMessages();
 
     selectedChatCompare = selectedChat;
@@ -186,25 +220,44 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   },[])
 
   useEffect(() => {
-    chatSocket?.addEventListener('message', (event) => {
-      const newMessageRecieved=event.data
-      if (
-        !selectedChatCompare || // if chat is not selected or doesn't match current chat
-        selectedChatCompare.id !== newMessageRecieved.room
-      ) {
-        if (!notification.includes(newMessageRecieved)) {
-          setNotification([newMessageRecieved, ...notification]);
-          setFetchAgain(!fetchAgain);
-        }
-      } else {
-        setMessages([...messages, newMessageRecieved]);
-      }
-    });
+
+    
+
+
+    // chatSocket?.addEventListener('message', (event) => {
+    //   // console.log(event)
+    //   let data=event.data
+    //   data = JSON.parse(data);
+
+    //   if(data.type=="typing"){
+    //     if(data.username!==user.username){
+    //       if(data.is_typing==true){
+    //         setIsTyping(true)
+    //       }
+    //       if(data.is_typing=='false'){
+    //         setIsTyping(false)
+    //       }
+    //     }
+    //   }
+
+    //   if (data.type=="chat"){
+    //     if (
+    //     !selectedChatCompare || // if chat is not selected or doesn't match current chat
+    //     selectedChatCompare.id !== data.room
+    //   ) {
+    //     if (!notification.includes(data)) {
+    //       setNotification([data, ...notification]);
+    //       setFetchAgain(!fetchAgain);
+    //     }
+    //   } else {
+    //     setMessages([...messages, data]);
+    //   }
+    //   }
+      
+    // });
 
   
-    chatSocket?.addEventListener('close', (event) => {
-      console.log('WebSocket connection closed:', event);
-    });
+  
 
 
   });
@@ -216,7 +269,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
     if (!typing) {
       setTyping(true);
-        typingSocket.send([true,user.username]);
+        chatSocket.send(["typing",true,user.username]);
 
       // socket.emit("typing", selectedChat._id);
     }
@@ -228,7 +281,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       if (timeDiff >= timerLength && typing) {
         // socket.emit("stop typing", selectedChat._id);
         setTyping(false);
-        typingSocket.send([false,user.username]);
+        chatSocket.send(["typing",false,user.username]);
       }
     }, timerLength);
   };
@@ -253,7 +306,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               onClick={() => setSelectedChat("")}
             />
             {messages &&
-              (!selectedChat.isGroupChat ? (
+              (!selectedChat.isGroupeChat ? (
                 <>
                   {getSender(user, selectedChat.users)}
                   <ProfileModal

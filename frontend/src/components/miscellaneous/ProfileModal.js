@@ -19,7 +19,7 @@ const ProfileModal = ({ user, children }) => {
   const urlS = process.env.REACT_APP_API_URL;
   const url = urlS.slice(0, -1);
 
-  const imagesrc=url+user.pic
+  const imagesrc=url+user?.pic
   return (
     <>
       {children ? (
@@ -36,7 +36,7 @@ const ProfileModal = ({ user, children }) => {
             d="flex"
             justifyContent="center"
           >
-            {user.first_name}
+            {user?.first_name}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody
@@ -49,13 +49,13 @@ const ProfileModal = ({ user, children }) => {
               borderRadius="full"
               boxSize="150px"
               src={imagesrc}
-              alt={user.first_name}
+              alt={user?.first_name}
             />
             <Text
               fontSize={{ base: "28px", md: "30px" }}
               fontFamily="Work sans"
             >
-              Username: {user.username}
+              Username: {user?.username}
             </Text>
           </ModalBody>
           <ModalFooter>

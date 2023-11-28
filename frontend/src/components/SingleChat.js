@@ -31,7 +31,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const wsurlenv=process.env.REACT_APP_WS_URL;
   const {room_id}=useParams()
 
-  const wsurl=`wss://${wsurlenv}/ws/`
+  const wsurl=`ws://${wsurlenv}/ws/`
 
 
   const [socket, setSocket] = useState(null);
@@ -49,8 +49,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       preserveAspectRatio: "xMidYMid slice",
     },
   };
-  const { selectedChat, setSelectedChat, user, notification, setNotification } =
+  const { selectedChat, chats,setSelectedChat, user, notification, setNotification } =
     ChatState();
+
 
   const fetchMessages =  () => {
     if (!selectedChat) return;
@@ -106,8 +107,10 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         )
         .then((res)=>{
           // setMessages([...messages, res.data]);
-          console.log(res.data)
           let data=res.data
+          data['roomId']=selectedChat?.id
+          setMessages([...messages, data]);
+
           data = JSON.stringify(data);
 
           chatSocket.send(["chat",data])
@@ -126,10 +129,18 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
+  const findRoomById=(roomId) =>{
+    return chats?.find(room => room.id === roomId);
+  }
+
+  const  findMsgById=  (msgId) =>{
+     return messages?.find(msg => msg.id === msgId);
+  }
+
   useEffect(() => {
 
     
-    const chatSocket = new WebSocket(wsurl+'chat/'+selectedChat?.id+'/');
+    const chatSocket = new WebSocket(wsurl+'chat/');
     
 
     setChatSocket(chatSocket)
@@ -144,40 +155,46 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
     chatSocket?.addEventListener('message', (event) => {
       let data=event.data
+
       data = JSON.parse(data);
-      console.log(data)
-      if(data.type==="typing"){
-        if(data.username!==user?.username){
-          if(data.is_typing=="true"){
-
-            console.log(data.is_typing)
-
-            setIsTyping(true)
-          }
-          if(data.is_typing=="false"){
-            setIsTyping(false)
-          }
-        }
-      }
-
-      if (data.type==="chat"){
-        console.log(data.content)
-        const msg = JSON.parse(data.content);
-        console.log(msg)
-        if (
-        !selectedChatCompare || // if chat is not selected or doesn't match current chat
-        selectedChatCompare.id !== msg.room.id
-      ) {
-        if (!notification.includes(msg)) {
-          setNotification((prevMessages) => [...prevMessages, msg]);
-          setFetchAgain(!fetchAgain);
-        }
-      } else {
-
-        setMessages((prevMessages) => [...prevMessages, msg]);
-      }
-      }
       
+        if(data.type==="typing"){
+          const room=findRoomById(parseInt(data.roomId))
+          if(room){
+            if(data.username!==user?.username){
+              if(data.is_typing=="true"){
+
+
+                setIsTyping(true)
+              }
+              if(data.is_typing=="false"){
+                setIsTyping(false)
+              }
+            }
+          }
+        }
+        if (data.type==="chat"){
+          const msg = JSON.parse(data.content);
+          const room=findRoomById(parseInt(msg.roomId))
+          if(room){
+            if (
+            !selectedChatCompare || // if chat is not selected or doesn't match current chat
+            selectedChatCompare.id !== msg.room.id
+          ) {
+            if (!notification.includes(msg)) {
+              setNotification((prevMessages) => [...prevMessages, msg]);
+              setFetchAgain(!fetchAgain);
+            }
+          } else {
+              if(msg.sender.id!==user.id){
+                const msgR=findMsgById(msg.id)
+                if(msgR===undefined){
+                  setMessages((prevMessages) => [...prevMessages, msg]);
+                }  
+              }
+            }
+          }
+        }        
     });
   
     chatSocket?.addEventListener('close', (event) => {
@@ -214,12 +231,55 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
 
   useEffect(()=>{
-    const chatSocket=new WebSocket(wsurl+'chat/'+selectedChat?.id+'/')
-    console.log(chatSocket)
+    const chatSocket=new WebSocket(wsurl+'chat/')
     setChatSocket(chatSocket)
   },[])
 
   useEffect(() => {
+
+
+
+     chatSocket?.addEventListener('message', (event) => {
+      let data=event.data
+
+      data = JSON.parse(data);
+      
+       
+        if (data.type==="chat"){
+          const msg = JSON.parse(data.content);
+          const room=findRoomById(parseInt(msg.roomId))
+          if(room){
+            if (
+            !selectedChatCompare || // if chat is not selected or doesn't match current chat
+            selectedChatCompare.id !== msg.room.id
+          ) {
+              if(msg.sender.id!==user.id){
+                // console.log(messages.includes(msg))
+                // const msgR=findMsgById(msg.id)
+                if (!notification.includes(msg)) {
+                  setNotification((prevMessages) => [...prevMessages, msg]);
+                  setFetchAgain(!fetchAgain);
+                }
+              }
+            if (!notification.includes(msg)) {
+              setNotification((prevMessages) => [...prevMessages, msg]);
+              setFetchAgain(!fetchAgain);
+            }
+          } else { 
+              if(msg.sender.id!==user.id){
+                // console.log(messages.includes(msg))
+                const msgR=findMsgById(msg.id)
+                console.log(msgR)
+                if(msgR===undefined){
+                  console.log('tarek')
+                  setMessages((prevMessages) => [...prevMessages, msg]);
+                }  
+              }
+            }
+          }
+        }        
+    });
+
 
     
 
@@ -269,19 +329,19 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
     if (!typing) {
       setTyping(true);
-        chatSocket.send(["typing",true,user.username]);
+        chatSocket.send(["typing",true,user.username,selectedChat?.id]);
 
       // socket.emit("typing", selectedChat._id);
     }
     let lastTypingTime = new Date().getTime();
-    var timerLength = 3000;
+    var timerLength = 1000;
     setTimeout(() => {
       var timeNow = new Date().getTime();
       var timeDiff = timeNow - lastTypingTime;
       if (timeDiff >= timerLength && typing) {
         // socket.emit("stop typing", selectedChat._id);
         setTyping(false);
-        chatSocket.send(["typing",false,user.username]);
+        chatSocket.send(["typing",false,user.username,selectedChat?.id]);
       }
     }, timerLength);
   };

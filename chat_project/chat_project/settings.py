@@ -162,5 +162,5 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
-WEBSOCKETS_SSL_CERTIFICATE = '/home/tarek/Documents/myprojet/ProjetSe/ProjetSe/cert.pem'
-WEBSOCKETS_SSL_KEY = '/home/tarek/Documents/myprojet/ProjetSe/ProjetSe/key.pem'
+WEBSOCKETS_SSL_CERTIFICATE = '/home/tarek/Documents/myprojet/ProjetSe/cert.pem'
+WEBSOCKETS_SSL_KEY = '/home/tarek/Documents/myprojet/ProjetSe/key.pem'

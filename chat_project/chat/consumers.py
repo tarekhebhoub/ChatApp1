@@ -10,8 +10,8 @@ from django.shortcuts import get_object_or_404
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_group_name = self.scope['url_route']['kwargs']['room_name']
-      
+        # self.room_group_name = self.scope['url_route']['kwargs']['room_name']
+        self.room_group_name='sender'
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -36,7 +36,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     'type':'typing_notification',
                     'message':text_data[1],
-                    'username':text_data[2]
+                    'username':text_data[2],
+                    'roomId':text_data[3]
 
                 }
             )
@@ -70,7 +71,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'typing',
             'is_typing': event['message'],
-            'username':event['username']
+            'username':event['username'],
+            'roomId':event['roomId']
         }))
     
 # class TypingConsumer(AsyncWebsocketConsumer):

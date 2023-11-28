@@ -189,13 +189,13 @@ function SideDrawer() {
                 <MenuItem
                   key={notif.id}
                   onClick={() => {
-                    setSelectedChat(notif.chat);
+                    setSelectedChat(notif.room);
                     setNotification(notification.filter((n) => n !== notif));
                   }}
                 >
-                  {notif.chat.isGroupChat
-                    ? `New Message in ${notif.chat.name_room}`
-                    : `New Message from ${getSender(user, notif.chat.users)}`}
+                  {notif.room.isGroupeChat
+                    ? `New Message in ${notif.room.name_room}`
+                    : `New Message from ${getSender(user, notif.room.users)}`}
                 </MenuItem>
               ))}
             </MenuList>

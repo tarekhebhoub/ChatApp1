@@ -28,9 +28,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         chat_part = text_data[:comma_index]
 
         text_data = text_data.split(',')
-        print(text_data)
+        # print(text_data)
         if text_data[0]=='typing':
-            print(text_data)
+            # print(text_data)
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {

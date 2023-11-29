@@ -105,10 +105,9 @@ class RoomView(APIView):
         # return Response(serializer.errors, status=400)
     def get(self,request):
         user=request.user
-        print(user)
 
 # Get rooms where the user is a member
-        rooms = models.Room.objects.filter(Q(users__in=[user])|Q(owner=user))
+        rooms = models.Room.objects.filter(Q(users=user)|Q(owner=user))
         print(rooms)
         # rooms=models.Room.objects.filter(users=user.id)
         serializer=serializers.RoomSerializer(rooms,many=True)
@@ -117,7 +116,8 @@ class RoomView(APIView):
         for room in rooms:
             full_users_list = list(get_user_model().objects.filter(id__in=room.users.all()))
             userSerializer=serializers.UserSerializer(full_users_list,many=True)
-
+            ownerSerializer=serializers.UserSerializer(room.owner)
+            data[i]['owner']=ownerSerializer.data
             room_messages = models.Message.objects.filter(room=room.id).order_by('-timestamp')
             if room_messages.exists():
                 last_message_in_room = room_messages.first()
@@ -147,13 +147,21 @@ class MessageView(APIView):
             user=serializers.UserSerializer(request.user)
             data['sender']=user.data
             room=serializers.RoomSerializer(rooms)
-            data['room']=room.data
-            print(data)
+            room=room.data
+            users=room['users']
+            listUsers=[]
+            for idUser in users:
+                user=models.User.objects.get(id=idUser)
+                userSerializer=serializers.UserSerializer(user)
+                listUsers.append(userSerializer.data)
+            room['users']=listUsers
+            data['room']=room
+
+            data['room']=room
 
             if data['readBy']:
                 readBy=serializers.UserSerializer(data['readBy'])
                 data['readBy']=readBy.data
-            print(data)
             return Response(data)
         return Response(serializer.errors)
     def get(self,request,id_room):
@@ -166,7 +174,16 @@ class MessageView(APIView):
             user=serializers.UserSerializer(message.sender)
             data[i]['sender']=user.data
             room=serializers.RoomSerializer(message.room)
-            data[i]['room']=room.data
+            room=room.data
+
+            users=room['users']
+            listUsers=[]
+            for idUser in users:
+                user=models.User.objects.get(id=idUser)
+                userSerializer=serializers.UserSerializer(user)
+                listUsers.append(userSerializer.data)
+            room['users']=listUsers
+            data[i]['room']=room
             if message.readBy:
                 readBy=serializers.UserSerializer(message.readBy)
                 data[i]['readBy']=readBy.data
@@ -187,9 +204,7 @@ def searchUsers(request):
     search_param = request.GET.get('search', '')
 
     users=models.User.objects.filter( ~Q(id=request.user.id),Q(username__icontains=search_param)|Q(first_name__icontains=search_param))
-    print(users)
     serializer=serializers.SearchUserSerializer(users,many=True)
-    print(serializer.data)
     return Response(serializer.data)
     return Response('')
 

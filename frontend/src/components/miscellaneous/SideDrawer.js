@@ -69,7 +69,8 @@ function SideDrawer() {
   
       localStorage.removeItem("userInfo");
         
-      history.push("/");
+      // history.push("/");
+      window.location.reload();
     })
     .catch((e)=>{
       console.log(e)

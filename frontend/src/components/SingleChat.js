@@ -158,13 +158,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
       data = JSON.parse(data);
       
-        if(data.type==="typing"){
-          const room=findRoomById(parseInt(data.roomId))
-          if(room){
+      if(data.type==="typing"){
+        const room=findRoomById(parseInt(data.roomId))
+        if(room){
+          if(selectedChatCompare.id === room.id){
             if(data.username!==user?.username){
               if(data.is_typing=="true"){
-
-
                 setIsTyping(true)
               }
               if(data.is_typing=="false"){
@@ -173,28 +172,20 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             }
           }
         }
-        if (data.type==="chat"){
-          const msg = JSON.parse(data.content);
-          const room=findRoomById(parseInt(msg.roomId))
-          if(room){
-            if (
-            !selectedChatCompare || // if chat is not selected or doesn't match current chat
-            selectedChatCompare.id !== msg.room.id
-          ) {
-            if (!notification.includes(msg)) {
-              setNotification((prevMessages) => [...prevMessages, msg]);
-              setFetchAgain(!fetchAgain);
-            }
-          } else {
-              if(msg.sender.id!==user.id){
-                const msgR=findMsgById(msg.id)
-                if(msgR===undefined){
-                  setMessages((prevMessages) => [...prevMessages, msg]);
-                }  
-              }
+      }
+      if (data.type==="chat"){
+        const msg = JSON.parse(data.content);
+        const room=findRoomById(parseInt(msg.roomId))
+        if(room){
+          if(selectedChatCompare.id === room.id){
+            if(msg.sender.id!==user.id){
+              if(!messages.includes(msg)){
+                setMessages((prevMessages) => [...prevMessages, msg]);
+              }  
             }
           }
-        }        
+        }
+      }
     });
   
     chatSocket?.addEventListener('close', (event) => {
@@ -254,28 +245,25 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             selectedChatCompare.id !== msg.room.id
           ) {
               if(msg.sender.id!==user.id){
-                // console.log(messages.includes(msg))
-                // const msgR=findMsgById(msg.id)
                 if (!notification.includes(msg)) {
-                  setNotification((prevMessages) => [...prevMessages, msg]);
-                  setFetchAgain(!fetchAgain);
+                  console.log(msg)
+                  setNotification((prevMessages) => {
+                    // Check if msg already exists in prevMessages
+                    if (!prevMessages.some((existingMsg) => existingMsg.id === msg.id)) {
+                      // If msg doesn't exist, add it to the array
+                      return [...prevMessages, msg];
+                    }
+
+                    // If msg already exists, return the current array without any changes
+                    return prevMessages;
+                  });
+                  
+                  // setNotification((prevMessages) => [...prevMessages, msg]);
+                  // setFetchAgain(!fetchAgain);
                 }
               }
-            if (!notification.includes(msg)) {
-              setNotification((prevMessages) => [...prevMessages, msg]);
-              setFetchAgain(!fetchAgain);
-            }
-          } else { 
-              if(msg.sender.id!==user.id){
-                // console.log(messages.includes(msg))
-                const msgR=findMsgById(msg.id)
-                console.log(msgR)
-                if(msgR===undefined){
-                  console.log('tarek')
-                  setMessages((prevMessages) => [...prevMessages, msg]);
-                }  
-              }
-            }
+
+            } 
           }
         }        
     });
@@ -321,6 +309,21 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
 
   });
+
+
+  const removeDuplicates = (list, identifier) => {
+  const uniqueSet = new Set();
+    return list.filter(obj => {
+      const value = obj[identifier];
+      if (!uniqueSet.has(value)) {
+        uniqueSet.add(value);
+        return true;
+      }
+      return false;
+    });
+  };
+
+
 
   const typingHandler = (e) => {
     setNewMessage(e.target.value);
